@@ -1,0 +1,329 @@
+title>백태우의 통장</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: 은행 통장 한 권. 표지 → 예금주 정보 → 거래내역 → 저축 계산기, 좁은 단 하나 */
+  :root {
+    --paper: #eef2ec;
+    --page: #f8faf6;
+    --ink: #1c2a24;
+    --muted: #5d6f66;
+    --line: #c9d5cc;
+    --green: #2f6b4f;
+    --stamp: #b8382f;
+    --font-display: "Nanum Myeongjo", "Batang", serif;
+    --font-body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #121a16;
+      --page: #19231e;
+      --ink: #e3ebe5;
+      --muted: #94a69c;
+      --line: #2e3d35;
+      --green: #7cc2a0;
+      --stamp: #e0675d;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #121a16;
+    --page: #19231e;
+    --ink: #e3ebe5;
+    --muted: #94a69c;
+    --line: #2e3d35;
+    --green: #7cc2a0;
+    --stamp: #e0675d;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    padding-block: 48px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .book {
+    max-width: 640px;
+    margin: 0 auto;
+    display: grid;
+    gap: 28px;
+  }
+
+  /* 표지 */
+  .cover {
+    background: var(--green);
+    color: var(--page);
+    border-radius: 6px;
+    padding: 36px 32px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255,255,255,.05) 14px 15px);
+    pointer-events: none;
+  }
+  .cover-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    opacity: .8;
+  }
+  .cover h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(40px, 9vw, 60px);
+    line-height: 1.15;
+    margin: 18px 0 6px;
+    text-wrap: balance;
+  }
+  .cover p { margin: 0; opacity: .9; }
+  .account {
+    margin-top: 28px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: .08em;
+    font-variant-numeric: tabular-nums;
+  }
+  .seal {
+    position: absolute;
+    right: 28px;
+    top: 30px;
+    width: 64px;
+    height: 64px;
+    border: 3px solid var(--page);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 1.1;
+    text-align: center;
+    transform: rotate(-12deg);
+    opacity: .85;
+  }
+
+  /* 내지 공통 */
+  .sheet {
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px 28px 24px;
+  }
+  .sheet h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    margin: 0 0 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .sheet h2 small {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 12px;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+
+  /* 예금주 정보 */
+  .info { margin: 0; display: grid; gap: 0; }
+  .info div {
+    display: grid;
+    grid-template-columns: 7em 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .info div:last-child { border-bottom: 0; }
+  .info dt { color: var(--muted); font-size: 14px; letter-spacing: .04em; }
+  .info dd { margin: 0; font-weight: 500; }
+  .info dd.hi { color: var(--stamp); font-weight: 600; }
+
+  /* 거래내역 */
+  .ledger-wrap { overflow-x: auto; }
+  .ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    min-width: 420px;
+  }
+  .ledger th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    color: var(--muted);
+    padding: 0 8px 10px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .ledger td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .ledger .no {
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    width: 3em;
+  }
+  .ledger .kind {
+    white-space: nowrap;
+    color: var(--green);
+    font-weight: 600;
+    width: 4.5em;
+  }
+
+  /* 저축 계산기 */
+  .calc-intro { margin: 0 0 18px; color: var(--muted); max-width: 60ch; }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+  .field input {
+    font: 500 18px var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 10px 12px;
+    width: 100%;
+  }
+  .field input:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 1px;
+  }
+  .result {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .result span { color: var(--muted); font-size: 14px; }
+  .result output {
+    font-family: var(--font-mono);
+    font-size: clamp(24px, 6vw, 32px);
+    font-weight: 500;
+    color: var(--green);
+    font-variant-numeric: tabular-nums;
+  }
+  .note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+  footer {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .08em;
+  }
+
+  @media (max-width: 440px) {
+    .cover { padding: 28px 22px 24px; }
+    .seal { width: 52px; height: 52px; font-size: 15px; right: 18px; top: 22px; }
+    .sheet { padding: 22px 18px 18px; }
+    .info div { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>
+
+<main class="book">
+  <section class="cover" aria-label="표지">
+    <div class="cover-label">보통예금 통장 · 자기소개</div>
+    <div class="seal" aria-hidden="true">백<br>태우</div>
+    <h1>백태우</h1>
+    <p>청주에서 차곡차곡 모으는 사람</p>
+    <div class="account">계좌번호 0026-043-BAEK</div>
+  </section>
+
+  <section class="sheet" aria-labelledby="owner">
+    <h2 id="owner">예금주 정보 <small>OWNER</small></h2>
+    <dl class="info">
+      <div><dt>이름</dt><dd>백태우</dd></div>
+      <div><dt>나이</dt><dd>26세</dd></div>
+      <div><dt>사는 곳</dt><dd>충청북도 청주시</dd></div>
+      <div><dt>좋아하는 것</dt><dd class="hi">돈 모으기</dd></div>
+    </dl>
+  </section>
+
+  <section class="sheet" aria-labelledby="history">
+    <h2 id="history">거래내역 <small>HISTORY</small></h2>
+    <div class="ledger-wrap">
+      <table class="ledger">
+        <thead>
+          <tr><th>번호</th><th>구분</th><th>적요</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="no">001</td><td class="kind">입금</td><td>안녕하세요, 백태우입니다. 이 페이지는 제 자기소개 통장입니다.</td></tr>
+          <tr><td class="no">002</td><td class="kind">입금</td><td>올해 26살이 되었습니다.</td></tr>
+          <tr><td class="no">003</td><td class="kind">입금</td><td>청주에 살고 있습니다. 청주에 오시면 연락 주세요.</td></tr>
+          <tr><td class="no">004</td><td class="kind">적금</td><td>가장 좋아하는 건 돈 모으기입니다. 잔고가 조금씩 늘어나는 걸 보는 게 즐겁습니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sheet" aria-labelledby="calc">
+    <h2 id="calc">적금 계산기 <small>SAVINGS</small></h2>
+    <p class="calc-intro">돈 모으기를 좋아해서 하나 만들어 두었습니다. 매달 넣을 금액과 기간을 입력하면 모이는 원금을 보여줍니다.</p>
+    <div class="fields">
+      <div class="field">
+        <label for="monthly">매달 저축액 (원)</label>
+        <input id="monthly" type="text" inputmode="numeric" value="300,000">
+      </div>
+      <div class="field">
+        <label for="months">기간 (개월)</label>
+        <input id="months" type="number" min="1" max="600" value="12">
+      </div>
+    </div>
+    <div class="result">
+      <span>모이는 원금</span>
+      <output id="total" for="monthly months">3,600,000원</output>
+    </div>
+    <p class="note">예시 값입니다. 이자는 빼고 원금만 계산합니다.</p>
+  </section>
+
+  <footer>BAEK TAEWOO · CHEONGJU · 2026</footer>
+</main>
+
+<script>
+  const monthly = document.getElementById("monthly");
+  const months = document.getElementById("months");
+  const total = document.getElementById("total");
+  const fmt = new Intl.NumberFormat("ko-KR");
+
+  function update() {
+    const m = parseInt(monthly.value.replace(/[^\d]/g, ""), 10) || 0;
+    const n = Math.max(0, parseInt(months.value, 10) || 0);
+    total.textContent = fmt.format(m * n) + "원";
+  }
+  monthly.addEventListener("input", () => {
+    const digits = monthly.value.replace(/[^\d]/g, "");
+    monthly.value = digits ? fmt.format(Number(digits)) : "";
+    update();
+  });
+  months.addEventListener("input", update);
+  update();
+</script>
